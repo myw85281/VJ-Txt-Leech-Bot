@@ -27,21 +27,20 @@ def safe_filename(name):
 
 
 def duration(filename):
-    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                             "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
     try:
-        try:
-            return float(result.stdout)
+        result = subprocess.run([
+            "ffprobe", "-v", "error", "-show_entries",
+            "format=duration", "-of",
+            "default=noprint_wrappers=1:nokey=1", filename
+        ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return float(result.stdout.strip())
     except ValueError:
         print('FFprobe failed:', result.stdout.decode())
         return 0.0
-    except ValueError:
-        print('FFprobe failed:', result.stdout.decode())
+    except Exception as e:
+        print('Unexpected error in duration():', str(e))
         return 0.0
-    
+
 def exec(cmd):
         process = subprocess.run(cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         output = process.stdout.decode()
@@ -168,40 +167,19 @@ def time_name():
     return f"{date} {current_time}.mp4"
 
 
-
-async def download_video(url, cmd, name):
+async def download_video(url,cmd, name):
     name = safe_filename(name)
-
-    # HTTP headers to bypass 403
-    headers = (
-        '--add-header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" '
-        '--add-header "Referer: https://classplusapp.com" '
-        '--add-header "Origin: https://classplusapp.com" '
-    )
-
-    # Build yt-dlp command with headers + retries + aria2c for speed
-    download_cmd = (
-        f'{cmd} {headers} '
-        '-R 25 --fragment-retries 25 '
-        '--external-downloader aria2c '
-        '--downloader-args "aria2c: -x 16 -j 32"'
-    )
-
+    download_cmd = f'{cmd} -R 25 --fragment-retries 25 --external-downloader aria2c --downloader-args "aria2c: -x 16 -j 32"'
     global failed_counter
     print(download_cmd)
     logging.info(download_cmd)
-
     k = subprocess.run(download_cmd, shell=True)
-
-    # Retry logic for certain sites
     if "visionias" in cmd and k.returncode != 0 and failed_counter <= 10:
         failed_counter += 1
         await asyncio.sleep(5)
         await download_video(url, cmd, name)
     failed_counter = 0
-
     try:
-        # Return whichever format was downloaded
         if os.path.isfile(name):
             return name
         elif os.path.isfile(f"{name}.webm"):
@@ -215,8 +193,8 @@ async def download_video(url, cmd, name):
             return f"{name}.mp4.webm"
 
         return name
-    except FileNotFoundError:
-        return os.path.splitext(name)[0] + ".mp4"
+    except FileNotFoundError as exc:
+        return os.path.isfile.splitext[0] + "." + "mp4"
 
 
 async def send_doc(bot: Client, m: Message,cc,ka,cc1,prog,count,name):
