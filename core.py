@@ -32,7 +32,11 @@ def duration(filename):
                              "default=noprint_wrappers=1:nokey=1", filename],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
-    return float(result.stdout)
+    try:
+        return float(result.stdout)
+    except ValueError:
+        print('FFprobe failed:', result.stdout.decode())
+        return 0.0
     
 def exec(cmd):
         process = subprocess.run(cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
