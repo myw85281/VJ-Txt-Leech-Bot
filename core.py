@@ -33,7 +33,11 @@ def duration(filename):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     try:
+        try:
         return float(result.stdout)
+    except ValueError:
+        print('FFprobe failed:', result.stdout.decode())
+        return 0.0
     except ValueError:
         print('FFprobe failed:', result.stdout.decode())
         return 0.0
