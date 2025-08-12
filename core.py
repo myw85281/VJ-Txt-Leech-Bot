@@ -18,6 +18,13 @@ from utils import progress_bar
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
+import re
+
+def safe_filename(name):
+    # Remove or replace unsafe characters for filesystem
+    name = name.replace(":", "-")  # replace colons
+    return re.sub(r'[^A-Za-z0-9._-]', '_', name)  # replace others with underscore
+
 
 def duration(filename):
     result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
@@ -154,6 +161,7 @@ def time_name():
 
 
 async def download_video(url,cmd, name):
+    name = safe_filename(name)
     download_cmd = f'{cmd} -R 25 --fragment-retries 25 --external-downloader aria2c --downloader-args "aria2c: -x 16 -j 32"'
     global failed_counter
     print(download_cmd)
